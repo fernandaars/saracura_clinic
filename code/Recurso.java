@@ -3,6 +3,7 @@ import java.time.LocalTime;
 
 public abstract class Recurso {
 	protected Agenda agenda;
+	protected int id;
 	protected int horaInicioDisponibilidade;
 	protected int duracaoJornada;
 	protected int intervaloConsulta;
@@ -15,25 +16,47 @@ public abstract class Recurso {
 		this.horaInicioDisponibilidade = horaInicioDisponibilidade;
 		this.duracaoJornada = duracaoJornada;
 		this.intervaloConsulta = intervaloConsulta;
+		this.id = -1;
+	}
+	
+	public boolean disponivelNoHorario(LocalDateTime horario) {
+		boolean atende = true;
+		
+		if (horario.getHour() < this.horaInicioDisponibilidade)
+			atende = false;
+		else {
+			LocalTime maxInicioAtendimento = LocalTime.of(horaInicioDisponibilidade + duracaoJornada, 0);
+			maxInicioAtendimento.minusMinutes(this.intervaloConsulta);
+				
+			if (horario.toLocalTime().isAfter(maxInicioAtendimento))
+				atende = false;
+		}
+			
+		return atende;
 	}
 	
 	public Agenda getAgenda() {
 		return agenda;
 	}
 	
+	public int getID() {
+		return id;
+	}
+	
+	public void setID(int id) {
+		this.id = id;
+	}
+	
+	public int getHoraInicioDisponibilidade() {
+		return horaInicioDisponibilidade;
+	}
+
+	public int getDuracaoJornada() {
+		return duracaoJornada;
+	}
+
 	public int getIntervaloConsulta() {
 		return intervaloConsulta;
 	}
 	
-	public boolean disponivelNoHorario(LocalDateTime horario) {
-		boolean atende = true;
-
-		LocalTime maxInicioAtendimento = LocalTime.of(horaInicioDisponibilidade + duracaoJornada, 0);
-		maxInicioAtendimento.minusMinutes(this.intervaloConsulta);
-			
-		if (horario.toLocalTime().isAfter(maxInicioAtendimento))
-			atende = false;
-			
-		return atende;
-	}
 }

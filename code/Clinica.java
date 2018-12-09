@@ -1,5 +1,7 @@
 import java.util.ArrayList;
-import java.util.Scanner;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.time.LocalDateTime;
 
 public class Clinica {
 	public static ArrayList<Medico> medicos;
@@ -8,112 +10,108 @@ public class Clinica {
 	public static void main(String[] args) {
 		medicos = new ArrayList<Medico>();
 		especialidades = new ArrayList<Especialidade>();
-
-		especialidades.add(new Especialidade("Pediatria"));
-		especialidades.add(new Especialidade("Geriatria"));
-		especialidades.add(new Especialidade("Psicologia"));
-
-		medicos.add(new Medico("LUIS", 7, 1, 3, 5, 20, especialidades.get(2)));
-		medicos.add(new Medico("JONAS", 10, 2, 4, 5, 30, especialidades.get(0)));
 		
-		Consulta c = new Consulta("MARIQUINHA", 912345678, 3, 12, 2018, 8, 00, 1);
-		c.autorizar();
-		medicos.get(0).getAgenda().agendarConsulta(c);
-
-		int escolha;
-		boolean sair = false;
-		Scanner in = new Scanner(System.in);
-		int i;
-
-		System.out.println("GERENCIAMENTO DE CONSULTAS\n");
-
-		while (!sair) {
-			printMenu();
-			escolha = Integer.parseInt(in.nextLine());
-
-			switch (escolha) {
-			case 0:
-				sair = true;
-				break;
-			case 1:
-				adicionarMedico(in);
-				break;
-			case 2:
-				i = 0;
-				for (Medico m : medicos) {
-					System.out.println(i++ + " - " + m.getNome());
-				}
-				break;
-			case 3:
-				adicionarEspecialidade(in);
-				break;
-			case 4:
-				i = 0;
-				for (Especialidade e : especialidades) {
-					System.out.println(i++ + " - " + e.getDescricao());
-				}
-				break;
-			default:
-				System.out.println("OPCAO INVALIDA");
-				break;
-			}
-
-			System.out.println();
+		popularEspecialidades();
+		popularMedicos();
+		
+		for (Medico m : medicos) {
+			System.out.println(m);
 		}
 
-		in.close();
+		Consulta c = new Consulta("MARIQUINHA", "91234-5678", LocalDateTime.of(2018, 12, 3, 9, 00), 1);
+		c.autorizar();
+		try {
+			medicos.get(0).getAgenda().agendarConsulta(c);
+		} catch (IllegalArgumentException | SQLException e) {
+			System.out.println("ERRO AO AGENDAR CONSULTA " + c.getNomeCliente() + ": ");
+			System.out.println(e.getMessage());
+		}
+
+		c = new Consulta("LUISINHA", "91234-5678", LocalDateTime.of(2018, 12, 3, 9, 20), 1);
+		c.autorizar();
+		try {
+			medicos.get(0).getAgenda().agendarConsulta(c);
+		} catch (IllegalArgumentException | SQLException e) {
+			System.out.println("ERRO AO AGENDAR CONSULTA " + c.getNomeCliente() + ": ");
+			System.out.println(e.getMessage());
+		}
+		
+		c = new Consulta("TEREZINHA", "91234-5678", LocalDateTime.of(2018, 12, 3, 9, 40), 1);
+		c.autorizar();
+		try {
+			medicos.get(0).getAgenda().agendarConsulta(c);
+		} catch (IllegalArgumentException | SQLException e) {
+			System.out.println("ERRO AO AGENDAR CONSULTA " + c.getNomeCliente() + ": ");
+			System.out.println(e.getMessage());
+		}
+
 	}
-
-	public static void adicionarMedico(Scanner in) {
-		System.out.print("NOME DO MEDICO: ");
-		String nome = in.nextLine();
-
-		System.out.print("HORA DE INICIO DO ATENDIMENTO: ");
-		int horaInicio = Integer.parseInt(in.nextLine());
-
-		System.out.println("DIAS DE ATENDIMENTO (1 (segunda) a 7 (domingo))");
-		System.out.print("DIA 1: ");
-		int dia1 = Integer.parseInt(in.nextLine());
-		System.out.print("DIA 2: ");
-		int dia2 = Integer.parseInt(in.nextLine());
-		System.out.print("DIA 3: ");
-		int dia3 = Integer.parseInt(in.nextLine());
-
-		System.out.print("INTERVALO DA CONSULTA: ");
-		int intervalo = Integer.parseInt(in.nextLine());
-
-		System.out.print("ESPECIALIDADE: ");
-		int especialidade = Integer.parseInt(in.nextLine());
-
+	
+	// Adiciona médico à base de dados
+	public static void adicionarMedico(String nome, int horaInicio, int duracaoConsulta, int dia1,
+			int dia2, int dia3, int especialidade) {
+		
 		Medico novoMedico;
 		try {
-			novoMedico = new Medico(nome, horaInicio, dia1, dia2, dia3, intervalo, especialidades.get(especialidade));
+			novoMedico = new Medico(nome, horaInicio, dia1, dia2, dia3, duracaoConsulta,
+					especialidades.get(especialidade));
 			medicos.add(novoMedico);
-		} catch (IllegalArgumentException e) {
+			int id = SQLiteConnection.insertMedico(novoMedico);
+			novoMedico.setID(id);
+		} catch (IllegalArgumentException | SQLException e) {
 			System.out.println("ERRO: " + e.getMessage());
 		}
 	}
 
-	public static void adicionarEspecialidade(Scanner in) {
-		System.out.println("NOME DA ESPECIALIDADE:");
-		String nome = in.nextLine();
-
-		Especialidade especialidade = new Especialidade(nome);
-		especialidades.add(especialidade);
+	// Adiciona especialidade à base de dados
+	public static void adicionarEspecialidade(String nome) {
+		
+		Especialidade novaEspecialidade;
+		try {
+			novaEspecialidade = new Especialidade(nome);
+			especialidades.add(novaEspecialidade);
+			int id = SQLiteConnection.insertEspecialidade(novaEspecialidade);
+			novaEspecialidade.setID(id);
+		} catch (IllegalArgumentException | SQLException e) {
+			System.out.println("ERRO: " + e.getMessage());
+		}
 	}
-
-	public static void printMenu() {
-		System.out.println("-------------MENU----------------");
-		System.out.println("SELECIONE OPCAO:");
-		System.out.println();
-		System.out.println("0 - SAIR");
-		System.out.println();
-		System.out.println("1 - ADICIONAR MEDICO");
-		System.out.println("2 - LISTAR MEDICOS");
-		System.out.println("3 - ADICIONAR ESPECIALIDADE");
-		System.out.println("4 - LISTAR ESPECIALIDADES");
-		System.out.println("---------------------------------");
-		System.out.print("ESCOLHA: ");
+	
+	// Preenche ArrayList medicos com entradas do banco de dados
+	public static void popularMedicos() {
+		ResultSet rs = SQLiteConnection.selectAll("MEDICOS");
+		
+		try {
+			while(rs.next()) {
+				Medico m = new Medico(
+						rs.getString("NOME"),
+						rs.getInt("HORA_INICIO"),
+						rs.getInt("DIA_ATEND1"),
+						rs.getInt("DIA_ATEND2"),
+						rs.getInt("DIA_ATEND3"),
+						rs.getInt("DURAC_CONSULTA"),
+						especialidades.get(rs.getInt("ESPECIALIDADE")));
+				m.setID(rs.getInt("ID"));
+				medicos.add(m);
+			}
+		} catch (SQLException e) {
+			System.out.println("ERRO AO RECUPERAR MEDICOS: " + e.getMessage());
+		}
+	}
+	
+	// Preenche ArrayList especialidades com entradas do banco de dados
+	public static void popularEspecialidades() {
+		ResultSet rs = SQLiteConnection.selectAll("ESPECIALIDADES");
+		
+		try {
+			while(rs.next()) {
+				Especialidade e = new Especialidade(rs.getString("DESCRICAO"));
+				e.setID(rs.getInt("ID"));
+				especialidades.add(e);
+			}
+		} catch (SQLException e) {
+			System.out.println("ERRO AO RECUPERAR ESPECIALIDADES: " + e.getMessage());
+		}
 	}
 
 }
