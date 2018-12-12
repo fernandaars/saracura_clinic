@@ -3,11 +3,11 @@ import java.time.*;
 public class Consulta implements Comparable<Consulta> {
 	private String nomeCliente;
 	private String telefoneCliente;
+	private int matriculaConvenio;
 	
 	private int id;
 	private LocalDateTime horario;
 	private boolean atendimentoConvenio;
-	private int matriculaConvenio;
 	private int tipoPagamento;
 	private boolean autorizada;
 

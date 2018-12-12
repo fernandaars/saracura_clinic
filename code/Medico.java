@@ -1,13 +1,15 @@
+import java.sql.SQLException;
 import java.time.DayOfWeek;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Arrays;
 
 public class Medico extends Recurso {
 	private String nome;
 	private DayOfWeek[] diasAtendimento;
-	private Especialidade especialidade;
+	private int especialidade;
 
-	public Medico(String nome, int hora, int dia1, int dia2, int dia3, int intervalo, Especialidade especialidade) {
+	public Medico(String nome, int hora, int dia1, int dia2, int dia3, int intervalo, int especialidade) {
 		super(hora, 6, intervalo);
 		this.nome = nome;
 
@@ -21,6 +23,7 @@ public class Medico extends Recurso {
 		this.especialidade = especialidade;
 	}
 	
+	// Sobrescreve método da superclasse para verificar dia da semana
 	public boolean disponivelNoHorario(LocalDateTime horario) {
 		boolean atende = true;
 
@@ -29,10 +32,45 @@ public class Medico extends Recurso {
 		else {
 			atende = super.disponivelNoHorario(horario);
 		}
-			
+
 		return atende;
 	}
 	
+	// Metodo abstrato herdado da superclasse
+	public void agendarConsulta(Consulta consulta) {
+		if (!this.agenda.isCarregada()) {
+			throw new AssertionError("A agenda deve ser carregada antes de agendar novas consultas.");
+		}
+
+		if (consulta.isAutorizada()) {
+			if (!this.agenda.horarioLivre(consulta.getHorario()))
+				throw new IllegalArgumentException("Erro ao agendar consulta: conflito de horarios");
+
+			try {
+				SQLiteConnection.insertConsulta(consulta, this);
+				this.agenda.agendar(consulta);
+			} catch (SQLException e) {
+				System.out.println("ERRO AO AGENDAR CONSULTA COM " + this);
+				System.out.println(e.getMessage());
+			}
+		} else {
+			throw new AssertionError("Consulta nao autorizada: verificar pagamento");
+		}
+	}
+	
+	// Metodo abstrato herdado da superclasse
+	public void carregarConsultas() {
+		ArrayList<Consulta> consultas;
+
+		try {
+			consultas = SQLiteConnection.selectConsultas(this.id);
+			this.agenda.carregar(consultas);
+		} catch (SQLException e) {
+			System.out.println("ERRO AO CARREGAR CONSULTAS DE MEDICO " + this);
+			System.out.println(e.getMessage());
+		}
+	}
+
 	public String getNome() {
 		return nome;
 	}
@@ -41,7 +79,7 @@ public class Medico extends Recurso {
 		return diasAtendimento;
 	}
 
-	public Especialidade getEspecialidade() {
+	public int getEspecialidade() {
 		return especialidade;
 	}
 
